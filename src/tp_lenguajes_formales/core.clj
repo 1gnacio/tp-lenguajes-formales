@@ -1,6 +1,5 @@
 (ns tp-lenguajes-formales.core
   (:gen-class))
-
 (require '[clojure.string :as st :refer [blank? starts-with? ends-with? lower-case]]
          '[clojure.java.io :refer [delete-file reader]]
          '[clojure.walk :refer [postwalk postwalk-replace]])
@@ -161,12 +160,19 @@
     :else (aplicar-lambda-multiple fnc lae amb)))
 
 
- (defn aplicar-lambda-simple
-   "Evalua una funcion lambda `fnc` con un cuerpo simple."
-   [fnc lae amb]
-   (let [nuevos (reduce concat (map list (second fnc) (map #(list 'quote %) lae))),
-         mapa (into (hash-map) (vec (map vec (partition 2 nuevos))))]
-        (evaluar (postwalk-replace mapa (first (nnext fnc))) amb)))
+(defn aplicar-lambda-simple
+  "Evalua un lambda `fnc` con un cuerpo simple"
+  [fnc lae amb]
+  (let [lae-con-quotes (map #(if (or (number? %) (string? %) (and (seq? %) (igual? (first %) 'lambda)))
+                                 %
+                                 (list 'quote %)) lae),
+        nuevos-pares (reduce concat (map list (second fnc) lae-con-quotes)),
+        mapa (into (hash-map) (vec (map vec (partition 2 nuevos-pares)))),
+        cuerpo (first (nnext fnc)),
+        expre (if (and (seq? cuerpo) (seq? (first cuerpo)) (igual? (ffirst cuerpo) 'lambda))
+                  (cons (first cuerpo) (postwalk-replace mapa (rest cuerpo)))
+                  (postwalk-replace mapa cuerpo))]
+        (evaluar expre amb)))
 
 
 (defn aplicar-lambda-multiple
@@ -174,8 +180,7 @@
   [fnc lae amb]
   (aplicar (cons 'lambda (cons (second fnc) (next (nnext fnc))))
            lae
-           (second (aplicar-lambda-simple fnc lae amb))
-          ))
+           (second (aplicar-lambda-simple fnc lae amb))))
 
 
 (defn aplicar-funcion-primitiva
@@ -537,8 +542,15 @@
 ; 123
 ; "123"
 (defn leer-entrada
-  "Lee una cadena desde la terminal/consola. Si los parentesis no estan correctamente balanceados al presionar Enter/Intro,
-   se considera que la cadena ingresada es una subcadena y el ingreso continua. De lo contrario, se la devuelve completa."
+ ; "Lee una cadena desde la terminal/consola. Si los parentesis no estan correctamente balanceados al presionar Enter/Intro,
+  ; se considera que la cadena ingresada es una subcadena y el ingreso continua. De lo contrario, se la devuelve completa."
+    ([] (leer-entrada (read-line)))
+    ([renglon] 
+      (cond
+        (= (get (frequencies renglon) \( ) (get (frequencies renglon) \) )) renglon
+      :else (leer-entrada (str renglon (read-line)))
+      )
+    )
 )
 
 ; user=> (verificar-parentesis "(hola 'mundo")
@@ -742,11 +754,11 @@
 ; user=> (fnc-mayor '(4 2 1 4))
 ; #f
 ; user=> (fnc-mayor '(A 3 2 1))
-; (;ERROR: <: Wrong type in arg1 A)
+; (;ERROR: >: Wrong type in arg1 A)
 ; user=> (fnc-mayor '(3 A 2 1))
-; (;ERROR: <: Wrong type in arg2 A)
+; (;ERROR: >: Wrong type in arg2 A)
 ; user=> (fnc-mayor '(3 2 A 1))
-; (;ERROR: <: Wrong type in arg2 A)
+; (;ERROR: >: Wrong type in arg2 A)
 (defn fnc-mayor
   "Devuelve #t si los numeros de una lista estan en orden estrictamente decreciente; si no, #f."
 )
@@ -766,19 +778,19 @@
 ; user=> (fnc-mayor-o-igual '(4 2 1 4))
 ; #f
 ; user=> (fnc-mayor-o-igual '(A 3 2 1))
-; (;ERROR: <: Wrong type in arg1 A)
+; (;ERROR: >=: Wrong type in arg1 A)
 ; user=> (fnc-mayor-o-igual '(3 A 2 1))
-; (;ERROR: <: Wrong type in arg2 A)
+; (;ERROR: >=: Wrong type in arg2 A)
 ; user=> (fnc-mayor-o-igual '(3 2 A 1))
-; (;ERROR: <: Wrong type in arg2 A)
+; (;ERROR: >=: Wrong type in arg2 A)
 (defn fnc-mayor-o-igual
   "Devuelve #t si los numeros de una lista estan en orden decreciente; si no, #f."
 )
 
 ; user=> (evaluar-escalar 32 '(x 6 y 11 z "hola"))
 ; (32 (x 6 y 11 z "hola"))
-; user=> (evaluar-escalar "hola" '(x 6 y 11 z "hola"))
-; ("hola" (x 6 y 11 z "hola"))
+; user=> (evaluar-escalar "chau" '(x 6 y 11 z "hola"))
+; ("chau" (x 6 y 11 z "hola"))
 ; user=> (evaluar-escalar 'y '(x 6 y 11 z "hola"))
 ; (11 (x 6 y 11 z "hola"))
 ; user=> (evaluar-escalar 'z '(x 6 y 11 z "hola"))
