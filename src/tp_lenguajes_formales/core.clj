@@ -604,7 +604,7 @@
 (defn buscar
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
-  (cond (neg? (.indexOf lista clave)) (generar-mensaje-error 'unbound-variable clave) ;revisar el error generado
+  (cond (neg? (.indexOf lista clave)) (generar-mensaje-error :unbound-variable clave) ;revisar el error generado
   :else (/ (+ 1 (.indexOf lista clave)) 2)
   )
 )
@@ -662,6 +662,11 @@
   (and (= (type a) (type b)) (= (.toUpperCase (str a)) (.toUpperCase (str b))))
 )
 
+(defn aux-list [e]
+  (cond (list? e) 1
+  :else 0)
+)
+
 ; user=> (fnc-append '( (1 2) (3) (4 5) (6 7)))
 ; (1 2 3 4 5 6 7)
 ; user=> (fnc-append '( (1 2) 3 (4 5) (6 7)))
@@ -670,6 +675,13 @@
 ; (;ERROR: append: Wrong type in arg A)
 (defn fnc-append
   "Devuelve el resultado de fusionar listas."
+  [lista]
+  (cond 
+    (= (reduce + (map aux-list lista)) (count lista))
+    (reduce concat lista)
+  :else 
+    (generar-mensaje-error :wrong-type-arg (nth lista (.indexOf (map aux-list lista) 0)))
+  )
 )
 
 ; user=> (fnc-equal? ())
@@ -690,6 +702,13 @@
 ; #f
 (defn fnc-equal?
   "Compara elementos. Si son iguales, devuelve #t. Si no, #f."
+  [lista]
+  (cond 
+    (empty? lista) "#t"
+    (= (count lista) 1) "#t"
+    (apply = (seq (.toUpperCase (apply str lista)))) "#t"
+    :else "#f"
+  )
 )
 
 ; user=> (fnc-read ())
@@ -724,6 +743,13 @@
 ; (;ERROR: +: Wrong type in arg2 A)
 (defn fnc-sumar
   "Suma los elementos de una lista."
+  [lista]
+  (cond 
+    (empty? lista) 0
+    (every? number? lista) (reduce + lista)
+    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '"+" (first lista))
+    :else (generar-mensaje-error :wrong-type-arg2 '"+" (some #(when-not (number? %) %) lista))
+  )
 )
 
 ; user=> (fnc-restar ())
@@ -744,6 +770,13 @@
 ; (;ERROR: -: Wrong type in arg2 A)
 (defn fnc-restar
   "Resta los elementos de un lista."
+  [lista]
+  (cond 
+    (empty? lista) (generar-mensaje-error :wrong-number-args '"-")
+    (every? number? lista) (reduce - lista)
+    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '"-" (first lista))
+    :else (generar-mensaje-error :wrong-type-arg2 '"-" (some #(when-not (number? %) %) lista))
+  )
 )
 
 ; user=> (fnc-menor ())
