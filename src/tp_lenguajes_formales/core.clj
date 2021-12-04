@@ -553,6 +553,12 @@
     )
 )
 
+(defn contar [a]
+  (cond (= \( a) 1
+        (= \) a) -1
+  :else 0)
+)
+
 ; user=> (verificar-parentesis "(hola 'mundo")
 ; 1
 ; user=> (verificar-parentesis "(hola '(mundo)))")
@@ -565,6 +571,10 @@
 ; 0
 (defn verificar-parentesis
   "Cuenta los parentesis en una cadena, sumando 1 si `(`, restando 1 si `)`. Si el contador se hace negativo, para y retorna -1."
+  [cadena]  
+    (let [cantidad (reduce + (map contar (seq cadena)))]
+    (cond (neg? cantidad) -1
+    :else cantidad))
 )
 
 ; user=> (actualizar-amb '(a 1 b 2 c 3) 'd 4)
@@ -578,6 +588,13 @@
 (defn actualizar-amb
   "Devuelve un ambiente actualizado con una clave (nombre de la variable o funcion) y su valor. 
   Si el valor es un error, el ambiente no se modifica. De lo contrario, se le carga o reemplaza la nueva informacion."
+  [lista clave valor]
+  (cond 
+    (or (= (symbol ";ERROR:") valor) (and (list? valor)  (not (neg? (.indexOf valor (symbol ";ERROR:")))))) lista
+    (empty? lista) (concat lista (list clave valor))
+    (neg? (.indexOf lista clave)) (concat lista (list clave valor))
+  :else (concat (take (+ 1 (.indexOf lista clave)) lista) (list valor) (drop valor lista))
+  )
 )
 
 ; user=> (buscar 'c '(a 1 b 2 c 3 d 4 e 5))
@@ -587,6 +604,9 @@
 (defn buscar
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
+  (cond (neg? (.indexOf lista clave)) (generar-mensaje-error 'unbound-variable clave) ;revisar el error generado
+  :else (/ (+ 1 (.indexOf lista clave)) 2)
+  )
 )
 
 ; user=> (error? (list (symbol ";ERROR:") 'mal 'hecho))
@@ -597,6 +617,11 @@
 ; true
 (defn error?
   "Devuelve true o false, segun sea o no el arg. una lista con `;ERROR:` o `;WARNING:` como primer elemento."
+  [lista]
+  (cond 
+    (or (not (neg? (.indexOf lista (symbol ";ERROR:")))) (not (neg? (.indexOf lista (symbol ";WARNING:"))))) true
+  :else false
+  )
 )
 
 ; user=> (proteger-bool-en-str "(or #F #f #t #T)")
@@ -607,6 +632,8 @@
 ; ""
 (defn proteger-bool-en-str
   "Cambia, en una cadena, #t por %t y #f por %f (y sus respectivas versiones en mayusculas), para poder aplicarle read-string."
+  [cadena]
+  (apply str (replace {\# \%} cadena))
 )
 
 ; user=> (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))
@@ -615,6 +642,8 @@
 ; (and (or #F #f #t #T) #T)
 (defn restaurar-bool
   "Cambia, en un codigo leido con read-string, %t por #t y %f por #f (y sus respectivas versiones en mayusculas)."
+  [cadena]
+  (apply str (replace {\% \#} (str cadena)))
 )
 
 ; user=> (igual? 'if 'IF)
@@ -629,6 +658,8 @@
 ; false
 (defn igual?
   "Verifica la igualdad entre dos elementos al estilo de Scheme (case-insensitive)"
+  [a b]
+  (and (= (type a) (type b)) (= (.toUpperCase (str a)) (.toUpperCase (str b))))
 )
 
 ; user=> (fnc-append '( (1 2) (3) (4 5) (6 7)))
