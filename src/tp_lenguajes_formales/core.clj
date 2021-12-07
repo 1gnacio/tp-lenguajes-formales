@@ -913,6 +913,16 @@
 ; ((;ERROR: define: bad variable (define 2 x)) (x 1))
 (defn evaluar-define
   "Evalua una expresion `define`. Devuelve una lista con el resultado y un ambiente actualizado con la definicion."
+  [exp arg]
+  (cond 
+    (and (= 3 (count exp)) (or (and (list? (second exp)) (empty? (second exp))) (number? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) arg)
+    (= 3 (count exp)) 
+      (if (list? (second exp)) 
+        (list (symbol "#<unspecified>") (concat arg (list (first (second exp))) (list (list 'lambda (list (second (second exp))) (nth exp 2)))))
+        (list (symbol "#<unspecified>") (list (second exp) (nth exp 2)))
+      )
+    :else (list (generar-mensaje-error :missing-or-extra 'define exp) arg)
+  )
 )
 
 ; user=> (evaluar-if '(if 1 2) '(n 7))
@@ -933,6 +943,15 @@
 ; ((;ERROR: if: missing or extra expression (if 1)) (n 7))
 (defn evaluar-if
   "Evalua una expresion `if`. Devuelve una lista con el resultado y un ambiente eventualmente modificado."
+  [exp arg]
+  (cond
+    (> 3 (count exp)) (list (generar-mensaje-error :missing-or-extra 'if exp) arg)
+    (and (= 3 (count exp)) (= (symbol "#f") (second exp))) (list (symbol "#<unspecified>") arg)
+    (and (= 4 (count exp)) (= (symbol "#f") (second exp))) (list (nth exp 3) arg)
+    (and (or (= 3 (count exp)) (= 4 (count exp))) (= (symbol "#t") (second exp)))
+     (if (number? (nth exp 2)) (list (nth exp 2) arg) (nth arg (+ 1 (.indexOf arg (nth exp 2)))))
+    (number? (second exp)) (if (number? (nth exp 2)) (list (nth exp 2) arg) (list (nth arg (+ 1 (.indexOf arg (nth exp 2)))) arg))
+  )
 )
 
 ; user=> (evaluar-or (list 'or) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))
