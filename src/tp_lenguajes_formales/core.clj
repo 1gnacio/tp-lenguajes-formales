@@ -801,6 +801,14 @@
 ; (;ERROR: <: Wrong type in arg2 A)
 (defn fnc-menor
   "Devuelve #t si los numeros de una lista estan en orden estrictamente creciente; si no, #f."
+  [lista]
+  (cond 
+    (empty? lista) "#t"
+    (and (every? number? lista) (apply < lista)) "#t"
+    (not (and (every? number? lista) (apply < lista))) "#f"
+    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '"<" (first lista))
+    :else (generar-mensaje-error :wrong-type-arg2 '"<" (some #(when-not (number? %) %) lista))
+  )
 )
 
 ; user=> (fnc-mayor ())
@@ -825,6 +833,14 @@
 ; (;ERROR: >: Wrong type in arg2 A)
 (defn fnc-mayor
   "Devuelve #t si los numeros de una lista estan en orden estrictamente decreciente; si no, #f."
+  [lista]
+  (cond 
+    (empty? lista) "#t"
+    (and (every? number? lista) (apply > lista)) "#t"
+    (not (and (every? number? lista) (apply > lista))) "#f"
+    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '">" (first lista))
+    :else (generar-mensaje-error :wrong-type-arg2 '">" (some #(when-not (number? %) %) lista))
+  )
 )
 
 ; user=> (fnc-mayor-o-igual ())
@@ -849,6 +865,14 @@
 ; (;ERROR: >=: Wrong type in arg2 A)
 (defn fnc-mayor-o-igual
   "Devuelve #t si los numeros de una lista estan en orden decreciente; si no, #f."
+  [lista]
+  (cond 
+    (empty? lista) "#t"
+    (and (every? number? lista) (apply >= lista)) "#t"
+    (not (and (every? number? lista) (apply >= lista))) "#f"
+    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '">=" (first lista))
+    :else (generar-mensaje-error :wrong-type-arg2 '">=" (some #(when-not (number? %) %) lista))
+  )
 )
 
 ; user=> (evaluar-escalar 32 '(x 6 y 11 z "hola"))
@@ -863,6 +887,12 @@
 ; ((;ERROR: unbound variable: n) (x 6 y 11 z "hola"))
 (defn evaluar-escalar
   "Evalua una expresion escalar. Devuelve una lista con el resultado y un ambiente."
+  [escalar ambiente]
+  (cond 
+    (or (number? escalar) (string? escalar)) (list (escalar ambiente))
+    (neg? (.indexOf ambiente escalar)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
+    :else (list (first (drop (+ 1 (.indexOf ambiente escalar)) ambiente)) ambiente)
+  )
 )
 
 ; user=> (evaluar-define '(define x 2) '(x 1))
