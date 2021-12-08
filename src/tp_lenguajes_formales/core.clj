@@ -542,8 +542,8 @@
 ; 123
 ; "123"
 (defn leer-entrada
- ; "Lee una cadena desde la terminal/consola. Si los parentesis no estan correctamente balanceados al presionar Enter/Intro,
-  ; se considera que la cadena ingresada es una subcadena y el ingreso continua. De lo contrario, se la devuelve completa."
+ "Lee una cadena desde la terminal/consola. Si los parentesis no estan correctamente balanceados al presionar Enter/Intro,
+  se considera que la cadena ingresada es una subcadena y el ingreso continua. De lo contrario, se la devuelve completa."
     ([] (leer-entrada (read-line)))
     ([renglon] 
       (cond
@@ -723,6 +723,12 @@
 ; (;ERROR: Wrong number of args given #<primitive-procedure read>)
 (defn fnc-read
   "Devuelve la lectura de un elemento de Scheme desde la terminal/consola."
+  [lista]
+  (cond 
+    (empty? lista) (leer-entrada)
+    (= 1 (count lista)) (generar-mensaje-error :io-ports-not-implemented 'read)
+    (< 0 (count lista)) (generar-mensaje-error :wrong-number-args-prim-proc 'read)
+  )
 )
 
 ; user=> (fnc-sumar ())
@@ -916,9 +922,9 @@
   [exp arg]
   (cond 
     (and (= 3 (count exp)) (or (and (list? (second exp)) (empty? (second exp))) (number? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) arg)
-    (= 3 (count exp)) 
+    (or (and (<= 3 (count exp)) (list? (second exp))) (and (= 3 (count exp)) (char? (second exp))))
       (if (list? (second exp)) 
-        (list (symbol "#<unspecified>") (concat arg (list (first (second exp))) (list (list 'lambda (list (second (second exp))) (nth exp 2)))))
+        (list (symbol "#<unspecified>") (concat arg (list (first (second exp))) (list (concat (list 'lambda (list (second (second exp)))) (nthnext exp 2)))))
         (list (symbol "#<unspecified>") (list (second exp) (nth exp 2)))
       )
     :else (list (generar-mensaje-error :missing-or-extra 'define exp) arg)
@@ -966,6 +972,14 @@
 ; (#f (#f #f #t #t))
 (defn evaluar-or
   "Evalua una expresion `or`.  Devuelve una lista con el resultado y un ambiente."
+  [exp amb]
+  (cond
+    (= 1 (count exp)) (list (symbol "#f") amb)
+    (= (symbol "#t") (second exp)) (list (symbol "#t") amb)
+    (and (= 3 (count exp)) (= (symbol "#f") (second exp))) (list (nth exp 2) amb)
+    (= (symbol "#f") (second exp)) (list (symbol "#f") amb)
+    (number? (second exp)) (list (second exp) amb)
+  )
 )
 
 ; user=> (evaluar-set! '(set! x 1) '(x 0))
@@ -980,6 +994,13 @@
 ; ((;ERROR: set!: bad variable 1) (x 0))
 (defn evaluar-set!
   "Evalua una expresion `set!`. Devuelve una lista con el resultado y un ambiente actualizado con la redefinicion."
+  [exp amb]
+  (cond
+    (empty? amb) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
+    (number? (second exp)) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
+    (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
+    (= 3 (count exp)) (list (symbol "#<unspecified>") (nthnext exp 1))
+  )
 )
 
 
