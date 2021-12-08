@@ -637,14 +637,25 @@
   (apply str (replace {\# \%} cadena))
 )
 
+(defn replace-proteger-bool [e]
+  (cond
+    (list? e) (map replace-proteger-bool e)
+    (= '%T e) (symbol "#T")
+    (= '%t e) (symbol "#t")
+    (= '%f e) (symbol "#f")
+    (= '%F e) (symbol "#F")
+    :else e
+  )
+)
+
 ; user=> (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))
 ; (and (or #F #f #t #T) #T)
 ; user=> (restaurar-bool (read-string "(and (or %F %f %t %T) %T)") )
 ; (and (or #F #f #t #T) #T)
 (defn restaurar-bool
   "Cambia, en un codigo leido con read-string, %t por #t y %f por #f (y sus respectivas versiones en mayusculas)."
-  [cadena]
-  (apply str (replace {\% \#} (str cadena)))
+  [lista]
+  (map replace-proteger-bool lista)
 )
 
 ; user=> (igual? 'if 'IF)
@@ -705,10 +716,10 @@
   "Compara elementos. Si son iguales, devuelve #t. Si no, #f."
   [lista]
   (cond 
-    (empty? lista) "#t"
-    (= (count lista) 1) "#t"
-    (apply = (seq (.toUpperCase (apply str lista)))) "#t"
-    :else "#f"
+    (empty? lista) (symbol "#t")
+    (= (count lista) 1) (symbol "#t")
+    (apply = (seq (.toUpperCase (apply str lista)))) (symbol "#t")
+    :else (symbol "#f")
   )
 )
 
@@ -811,9 +822,9 @@
   "Devuelve #t si los numeros de una lista estan en orden estrictamente creciente; si no, #f."
   [lista]
   (cond 
-    (empty? lista) "#t"
-    (and (every? number? lista) (apply < lista)) "#t"
-    (and (every? number? lista) (not (apply < lista))) "#f"
+    (empty? lista) (symbol "#t")
+    (and (every? number? lista) (apply < lista)) (symbol "#t")
+    (and (every? number? lista) (not (apply < lista))) (symbol "#f")
     (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '"<" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '"<" (some #(when-not (number? %) %) lista))
   )
@@ -843,9 +854,9 @@
   "Devuelve #t si los numeros de una lista estan en orden estrictamente decreciente; si no, #f."
   [lista]
   (cond 
-    (empty? lista) "#t"
-    (and (every? number? lista) (apply > lista)) "#t"
-    (and (every? number? lista) (not (apply > lista))) "#f"
+    (empty? lista) (symbol "#t")
+    (and (every? number? lista) (apply > lista)) (symbol "#t")
+    (and (every? number? lista) (not (apply > lista))) (symbol "#f")
     (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '">" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '">" (some #(when-not (number? %) %) lista))
   )
@@ -875,9 +886,9 @@
   "Devuelve #t si los numeros de una lista estan en orden decreciente; si no, #f."
   [lista]
   (cond 
-    (empty? lista) "#t"
-    (and (every? number? lista) (apply >= lista)) "#t"
-    (and (every? number? lista) (not (apply >= lista))) "#f"
+    (empty? lista) (symbol "#t")
+    (and (every? number? lista) (apply >= lista)) (symbol "#t")
+    (and (every? number? lista) (not (apply >= lista))) (symbol "#f")
     (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '">=" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '">=" (some #(when-not (number? %) %) lista))
   )
@@ -924,7 +935,7 @@
   [exp arg]
   (cond 
     (and (= 3 (count exp)) (or (and (list? (second exp)) (empty? (second exp))) (number? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) arg)
-    (or (and (<= 3 (count exp)) (list? (second exp))) (and (= 3 (count exp)) (char? (second exp))))
+    (or (and (<= 3 (count exp)) (list? (second exp))) (and (= 3 (count exp)) (symbol? (second exp))))
       (if (list? (second exp)) 
         (list (symbol "#<unspecified>") (concat arg (list (first (second exp))) (list (concat (list 'lambda (list (second (second exp)))) (nthnext exp 2)))))
         (list (symbol "#<unspecified>") (list (second exp) (nth exp 2)))

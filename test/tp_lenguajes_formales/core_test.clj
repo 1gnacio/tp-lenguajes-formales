@@ -55,8 +55,8 @@
 
 (deftest restaurar-bool-test
   (testing "prueba de la funcion: restaurar-bool"
-    (is (= '"(and (or #F #f #t #T) #T)" (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))))
-    (is (= '"(and (or #F #f #t #T) #T)" (restaurar-bool (read-string "(and (or %F %f %t %T) %T)") )))
+    (is (= (list 'and (list 'or (symbol "#F") (symbol "#f") (symbol "#t") (symbol "#T")) (symbol "#T")) (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))))
+    (is (= (list 'and (list 'or (symbol "#F") (symbol "#f") (symbol "#t") (symbol "#T")) (symbol "#T")) (restaurar-bool (read-string "(and (or %F %f %t %T) %T)"))))
   )
 )
 
@@ -80,14 +80,14 @@
 
 (deftest fnc-equal?-test
   (testing "prueba de la funcion: fnc-equal?"
-    (is (= '"#t" (fnc-equal? ())))
-    (is (= '"#t" (fnc-equal? '(A))))
-    (is (= '"#t" (fnc-equal? '(A a))))
-    (is (= '"#t" (fnc-equal? '(A a A))))
-    (is (= '"#t" (fnc-equal? '(A a A a))))
-    (is (= '"#f" (fnc-equal? '(A a A B))))
-    (is (= '"#t" (fnc-equal? '(1 1 1 1))))
-    (is (= '"#f" (fnc-equal? '(1 1 2 1))))    
+    (is (= (symbol "#t") (fnc-equal? ())))
+    (is (= (symbol "#t") (fnc-equal? '(A))))
+    (is (= (symbol "#t") (fnc-equal? '(A a))))
+    (is (= (symbol "#t") (fnc-equal? '(A a A))))
+    (is (= (symbol "#t") (fnc-equal? '(A a A a))))
+    (is (= (symbol "#f") (fnc-equal? '(A a A B))))
+    (is (= (symbol "#t") (fnc-equal? '(1 1 1 1))))
+    (is (= (symbol "#f") (fnc-equal? '(1 1 2 1))))    
   )
 )
 
@@ -129,13 +129,13 @@
 
 (deftest fnc-menor-test
   (testing "prueba de la funcion: fnc-menor"
-    (is (= '"#t" (fnc-menor ())))
-    (is (= '"#t" (fnc-menor '(1))))
-    (is (= '"#t" (fnc-menor '(1 2))))
-    (is (= '"#t" (fnc-menor '(1 2 3))))
-    (is (= '"#t" (fnc-menor '(1 2 3 4))))
-    (is (= '"#f" (fnc-menor '(1 2 2 4))))
-    (is (= '"#f" (fnc-menor '(1 2 1 4))))
+    (is (= (symbol "#t") (fnc-menor ())))
+    (is (= (symbol "#t") (fnc-menor '(1))))
+    (is (= (symbol "#t") (fnc-menor '(1 2))))
+    (is (= (symbol "#t") (fnc-menor '(1 2 3))))
+    (is (= (symbol "#t") (fnc-menor '(1 2 3 4))))
+    (is (= (symbol "#f") (fnc-menor '(1 2 2 4))))
+    (is (= (symbol "#f") (fnc-menor '(1 2 1 4))))
     (is (= (generar-mensaje-error :wrong-type-arg1 '"<" 'A) (fnc-menor '(A 1 2 4))))    
     (is (= (generar-mensaje-error :wrong-type-arg2 '"<" 'A) (fnc-menor '(1 A 2 4))))    
     (is (= (generar-mensaje-error :wrong-type-arg2 '"<" 'A) (fnc-menor '(1 2 A 4))))    
@@ -144,13 +144,13 @@
 
 (deftest fnc-mayor-test
   (testing "prueba de la funcion: fnc-mayor"
-    (is (= '"#t" (fnc-mayor ())))
-    (is (= '"#t" (fnc-mayor '(1))))
-    (is (= '"#t" (fnc-mayor '(2 1))))
-    (is (= '"#t" (fnc-mayor '(3 2 1))))
-    (is (= '"#t" (fnc-mayor '(4 3 2 1))))
-    (is (= '"#f" (fnc-mayor '(4 2 2 1))))
-    (is (= '"#f" (fnc-mayor '(4 2 1 4))))
+    (is (= (symbol "#t") (fnc-mayor ())))
+    (is (= (symbol "#t") (fnc-mayor '(1))))
+    (is (= (symbol "#t") (fnc-mayor '(2 1))))
+    (is (= (symbol "#t") (fnc-mayor '(3 2 1))))
+    (is (= (symbol "#t") (fnc-mayor '(4 3 2 1))))
+    (is (= (symbol "#f") (fnc-mayor '(4 2 2 1))))
+    (is (= (symbol "#f") (fnc-mayor '(4 2 1 4))))
     (is (= (generar-mensaje-error :wrong-type-arg1 '">" 'A) (fnc-mayor '(A 3 2 1))))    
     (is (= (generar-mensaje-error :wrong-type-arg2 '">" 'A) (fnc-mayor '(3 A 2 1))))    
     (is (= (generar-mensaje-error :wrong-type-arg2 '">" 'A) (fnc-mayor '(3 2 A 1))))    
@@ -159,13 +159,13 @@
 
 (deftest fnc-mayor-o-igual-test
   (testing "prueba de la funcion: fnc-mayor-o-igual"
-    (is (= '"#t" (fnc-mayor-o-igual ())))
-    (is (= '"#t" (fnc-mayor-o-igual '(1))))
-    (is (= '"#t" (fnc-mayor-o-igual '(2 1))))
-    (is (= '"#t" (fnc-mayor-o-igual '(3 2 1))))
-    (is (= '"#t" (fnc-mayor-o-igual '(4 3 2 1))))
-    (is (= '"#t" (fnc-mayor-o-igual '(4 2 2 1))))
-    (is (= '"#f" (fnc-mayor-o-igual '(4 2 1 4))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual ())))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(2 1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(3 2 1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(4 3 2 1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(4 2 2 1))))
+    (is (= (symbol "#f") (fnc-mayor-o-igual '(4 2 1 4))))
     (is (= (generar-mensaje-error :wrong-type-arg1 '">=" 'A) (fnc-mayor-o-igual '(A 3 2 1))))    
     (is (= (generar-mensaje-error :wrong-type-arg2 '">=" 'A) (fnc-mayor-o-igual '(3 A 2 1))))    
     (is (= (generar-mensaje-error :wrong-type-arg2 '">=" 'A) (fnc-mayor-o-igual '(3 2 A 1))))    
@@ -179,5 +179,51 @@
     (is (= '(11 (x 6 y 11 z "hola")) (evaluar-escalar 'y '(x 6 y 11 z "hola"))))
     (is (= '("hola" (x 6 y 11 z "hola")) (evaluar-escalar 'z '(x 6 y 11 z "hola"))))
     (is (= (list (generar-mensaje-error :unbound-variable 'n) '(x 6 y 11 z "hola")) (evaluar-escalar 'n '(x 6 y 11 z "hola"))))
+  )
+)
+
+(deftest evaluar-define-test
+  (testing "prueba de la funcion: evaluar-define"
+    (is (= (list (symbol "#<unspecified>") '(x 2)) (evaluar-define '('define x 2) '(x 1))))
+    (is (= (list (symbol "#<unspecified>") (list 'x 1 'f (list 'lambda (list 'x) (list '+ 'x 1)))) (evaluar-define (list 'define '(f x) '(+ x 1)) '(x 1))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '('define)) '(x 1)) (evaluar-define '('define) '(x 1))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '('define x)) '(x 1)) (evaluar-define '('define x) '(x 1))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '('define x 2 3)) '(x 1)) (evaluar-define '('define x 2 3) '(x 1))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '('define ())) '(x 1)) (evaluar-define '('define ()) '(x 1))))
+    (is (= (list (generar-mensaje-error :bad-variable 'define '('define () 2)) '(x 1)) (evaluar-define '('define () 2) '(x 1))))
+    (is (= (list (generar-mensaje-error :bad-variable 'define '('define 2 x)) '(x 1)) (evaluar-define '('define 2 x) '(x 1))))
+  )
+)
+
+(deftest evaluar-if-test
+  (testing "prueba de la funcion: evaluar-if"
+    (is (= (list 2 (list 'n 7)) (evaluar-if '('if 1 2) '(n 7))))
+    (is (= (list 7 (list 'n 7)) (evaluar-if '('if 1 n) '(n 7))))
+    (is (= (list 7 (list 'n 7)) (evaluar-if '('if 1 n 8) '(n 7))))
+    (is (= (list (symbol  "#<unspecified>") (list 'n 7 (symbol "#f") (symbol "#f"))) (evaluar-if (list 'if (symbol "#f") 'n) (list 'n 7 (symbol "#f") (symbol "#f")))))
+    (is (= (list 8 (list 'n 7 (symbol "#f") (symbol "#f")) (evaluar-if (list 'if (symbol "#f") 'n 8) (list 'n 7 (symbol "#f") (symbol "#f"))))))
+    (is (= (list (symbol "#<unspecified>") (list 'n 9 (symbol "#f") (symbol "#f"))) (evaluar-if (list 'if (symbol "#f") 'n '(set! n 9)) (list 'n 7 (symbol "#f") (symbol "#f")))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'if '('if)) '(n 7)) (evaluar-if '('if) '(n 7))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'if '('if 1)) '(n 7)) (evaluar-if '('if 1) '(n 7))))
+  )
+)
+
+(deftest evaluar-or-test
+  (testing "prueba de la funcion: evaluar-or"
+    (is (= (list (symbol "#f") (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t"))) (evaluar-or (list 'or) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))))
+    (is (= (list (symbol "#t") (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t"))) (evaluar-or (list 'or (symbol "#t")) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))))
+    (is (= (list 7 (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t"))) (evaluar-or (list 'or 7) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))))
+    (is (= (list 5 (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t"))) (evaluar-or (list 'or (symbol "#f") 5) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))))
+    (is (= (list (symbol "#f") (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t"))) (evaluar-or (list 'or (symbol "#f")) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))))
+  )
+)
+
+(deftest evaluar-set!-test
+  (testing "prueba de la funcion: evaluar-set!"
+    (is (= (list (symbol "#<unspecified>") '(x 1)) (evaluar-set! '(set! x 1) '(x 0))))
+    (is (= (list (generar-mensaje-error :unbound-variable 'x) '()) (evaluar-set! '(set! x 1) '())))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'set! '(set! x)) '(x 0)) (evaluar-set! '(set! x) '(x 0))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'set! '(set! x 1 2)) '(x 0)) (evaluar-set! '(set! x 1 2) '(x 0))))
+    (is (= (list (generar-mensaje-error :bad-variable 'set! 1) '(x 0)) (evaluar-set! '(set! 1 2) '(x 0))))
   )
 )
