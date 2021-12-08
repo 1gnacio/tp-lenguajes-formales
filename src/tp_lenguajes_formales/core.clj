@@ -548,7 +548,7 @@
     ([renglon] 
       (cond
         (= (get (frequencies renglon) \( ) (get (frequencies renglon) \) )) renglon
-      :else (leer-entrada (str renglon (read-line)))
+      :else (leer-entrada (str renglon " " (read-line)))
       )
     )
 )
@@ -604,8 +604,9 @@
 (defn buscar
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
+  [clave lista]
   (cond (neg? (.indexOf lista clave)) (generar-mensaje-error :unbound-variable clave) ;revisar el error generado
-  :else (/ (+ 1 (.indexOf lista clave)) 2)
+  :else (/ (+ 2 (.indexOf lista clave)) 2)
   )
 )
 
@@ -723,12 +724,12 @@
 ; (;ERROR: Wrong number of args given #<primitive-procedure read>)
 (defn fnc-read
   "Devuelve la lectura de un elemento de Scheme desde la terminal/consola."
-  [lista]
-  (cond 
-    (empty? lista) (leer-entrada)
-    (= 1 (count lista)) (generar-mensaje-error :io-ports-not-implemented 'read)
-    (< 0 (count lista)) (generar-mensaje-error :wrong-number-args-prim-proc 'read)
-  )
+  [lista] 
+    (cond
+      (empty? lista) (read-string (leer-entrada))
+      (= 1 (count lista)) (generar-mensaje-error :io-ports-not-implemented 'read)
+      (< 0 (count lista)) (generar-mensaje-error :wrong-number-args-prim-proc 'read)
+    )
 )
 
 ; user=> (fnc-sumar ())
@@ -753,7 +754,7 @@
   (cond 
     (empty? lista) 0
     (every? number? lista) (reduce + lista)
-    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '"+" (first lista))
+    (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '"+" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '"+" (some #(when-not (number? %) %) lista))
   )
 )
@@ -779,8 +780,9 @@
   [lista]
   (cond 
     (empty? lista) (generar-mensaje-error :wrong-number-args '"-")
+    (and (= 1 (count lista)) (number? (first lista))) (- (first lista))
     (every? number? lista) (reduce - lista)
-    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '"-" (first lista))
+    (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '"-" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '"-" (some #(when-not (number? %) %) lista))
   )
 )
@@ -811,8 +813,8 @@
   (cond 
     (empty? lista) "#t"
     (and (every? number? lista) (apply < lista)) "#t"
-    (not (and (every? number? lista) (apply < lista))) "#f"
-    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '"<" (first lista))
+    (and (every? number? lista) (not (apply < lista))) "#f"
+    (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '"<" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '"<" (some #(when-not (number? %) %) lista))
   )
 )
@@ -843,8 +845,8 @@
   (cond 
     (empty? lista) "#t"
     (and (every? number? lista) (apply > lista)) "#t"
-    (not (and (every? number? lista) (apply > lista))) "#f"
-    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '">" (first lista))
+    (and (every? number? lista) (not (apply > lista))) "#f"
+    (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '">" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '">" (some #(when-not (number? %) %) lista))
   )
 )
@@ -875,8 +877,8 @@
   (cond 
     (empty? lista) "#t"
     (and (every? number? lista) (apply >= lista)) "#t"
-    (not (and (every? number? lista) (apply >= lista))) "#f"
-    (char? (first lista)) (generar-mensaje-error :wrong-type-arg1 '">=" (first lista))
+    (and (every? number? lista) (not (apply >= lista))) "#f"
+    (not (number? (first lista))) (generar-mensaje-error :wrong-type-arg1 '">=" (first lista))
     :else (generar-mensaje-error :wrong-type-arg2 '">=" (some #(when-not (number? %) %) lista))
   )
 )
@@ -895,7 +897,7 @@
   "Evalua una expresion escalar. Devuelve una lista con el resultado y un ambiente."
   [escalar ambiente]
   (cond 
-    (or (number? escalar) (string? escalar)) (list (escalar ambiente))
+    (or (number? escalar) (string? escalar)) (list escalar ambiente)
     (neg? (.indexOf ambiente escalar)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
     :else (list (first (drop (+ 1 (.indexOf ambiente escalar)) ambiente)) ambiente)
   )

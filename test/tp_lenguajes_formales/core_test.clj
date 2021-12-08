@@ -2,17 +2,10 @@
   (:require [clojure.test :refer :all]
             [tp-lenguajes-formales.core :refer :all]))
 
-(deftest es-el-doble?-test
- (testing "Prueba de la funcion: es-el-doble?"
- (is (= true (es-el-doble? 4 8)))
- (is (= false (es-el-doble? 4 7)))
- )
-)
-
 (deftest leer-entrada-test
   (testing "prueba de la funcion: leer-entrada"
     (println "Escriba (hola -enter- mundo)")
-    (is (= (leer-entrada) (with-in-string '"(hola" '"mundo)")))
+    (is (= (leer-entrada) '"(hola mundo)"))
     (println "Escriba 123")
     (is (= (leer-entrada) '"123"))
   )
@@ -32,7 +25,7 @@
   (testing "prueba de la funcion: actualizar-amb"
     (is (= '(a 1 b 2 c 3 d 4) (actualizar-amb '(a 1 b 2 c 3) 'd 4)))
     (is (= '(a 1 b 4 c 3) (actualizar-amb '(a 1 b 2 c 3) 'b 4)))
-    (is (= '(a 1 b 2 c 3) (actualizar-amb '(a 1 b 2 c 3) 'b (list (symbol ";ERROR:") 'mal 'hecho)))
+    (is (= '(a 1 b 2 c 3) (actualizar-amb '(a 1 b 2 c 3) 'b (list (symbol ";ERROR:") 'mal 'hecho))))
     (is (= '(b 7) (actualizar-amb () 'b 7)))
   )
 )
@@ -55,15 +48,15 @@
 (deftest proteger-bool-en-str-test
   (testing "prueba de la funcion: proteger-bool-en-str"
     (is (= '"(or %F %f %t %T)" (proteger-bool-en-str "(or #F #f #t #T)")))
-    (is (= '"(and (or #F #f #t #T) #T)" (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))
+    (is (= '"(and (or %F %f %t %T) %T)" (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))
     (is (= '"" (proteger-bool-en-str "")))
   )
 )
 
 (deftest restaurar-bool-test
   (testing "prueba de la funcion: restaurar-bool"
-    (is (= '"(and (or #F #f #t #T) #T)" (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)"))))
-    (is (= '"(and (or #F #f #t #T) #T)" (restaurar-bool (read-string "(and (or %F %f %t %T) %T)") ))
+    (is (= '"(and (or #F #f #t #T) #T)" (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))))
+    (is (= '"(and (or #F #f #t #T) #T)" (restaurar-bool (read-string "(and (or %F %f %t %T) %T)") )))
   )
 )
 
@@ -103,8 +96,8 @@
     (println "Escriba (hola -enter- mundo)")
     (is (= '(hola mundo) (fnc-read ())))
     (is (= (generar-mensaje-error :io-ports-not-implemented 'read) (fnc-read '(1))))
-    (is (= (generar-mensaje-error :wrong-number-args '#<primitive-procedure read>) (fnc-read '(1 2))))
-    (is (= (generar-mensaje-error :wrong-number-args '#<primitive-procedure read>) (fnc-read '(1 2 3))))  
+    (is (= (generar-mensaje-error :wrong-number-args-prim-proc 'read) (fnc-read '(1 2))))
+    (is (= (generar-mensaje-error :wrong-number-args-prim-proc 'read) (fnc-read '(1 2 3))))  
   )
 )
 
@@ -166,16 +159,16 @@
 
 (deftest fnc-mayor-o-igual-test
   (testing "prueba de la funcion: fnc-mayor-o-igual"
-    (is (= '"#t" (fnc-mayor ())))
-    (is (= '"#t" (fnc-mayor '(1))))
-    (is (= '"#t" (fnc-mayor '(2 1))))
-    (is (= '"#t" (fnc-mayor '(3 2 1))))
-    (is (= '"#t" (fnc-mayor '(4 3 2 1))))
-    (is (= '"#t" (fnc-mayor '(4 2 2 1))))
-    (is (= '"#f" (fnc-mayor '(4 2 1 4))))
-    (is (= (generar-mensaje-error :wrong-type-arg1 '">=" 'A) (fnc-mayor '(A 3 2 1))))    
-    (is (= (generar-mensaje-error :wrong-type-arg2 '">=" 'A) (fnc-mayor '(3 A 2 1))))    
-    (is (= (generar-mensaje-error :wrong-type-arg2 '">=" 'A) (fnc-mayor '(3 2 A 1))))    
+    (is (= '"#t" (fnc-mayor-o-igual ())))
+    (is (= '"#t" (fnc-mayor-o-igual '(1))))
+    (is (= '"#t" (fnc-mayor-o-igual '(2 1))))
+    (is (= '"#t" (fnc-mayor-o-igual '(3 2 1))))
+    (is (= '"#t" (fnc-mayor-o-igual '(4 3 2 1))))
+    (is (= '"#t" (fnc-mayor-o-igual '(4 2 2 1))))
+    (is (= '"#f" (fnc-mayor-o-igual '(4 2 1 4))))
+    (is (= (generar-mensaje-error :wrong-type-arg1 '">=" 'A) (fnc-mayor-o-igual '(A 3 2 1))))    
+    (is (= (generar-mensaje-error :wrong-type-arg2 '">=" 'A) (fnc-mayor-o-igual '(3 A 2 1))))    
+    (is (= (generar-mensaje-error :wrong-type-arg2 '">=" 'A) (fnc-mayor-o-igual '(3 2 A 1))))    
   )
 )
 
@@ -185,7 +178,6 @@
     (is (= '("chau" (x 6 y 11 z "hola")) (evaluar-escalar "chau" '(x 6 y 11 z "hola"))))
     (is (= '(11 (x 6 y 11 z "hola")) (evaluar-escalar 'y '(x 6 y 11 z "hola"))))
     (is (= '("hola" (x 6 y 11 z "hola")) (evaluar-escalar 'z '(x 6 y 11 z "hola"))))
-    (is (= '(11 (x 6 y 11 z "hola")) (evaluar-escalar 'n '(x 6 y 11 z "hola"))))
-    (is (= '((generar-mensaje-error :unbound-variable escalar) (x 6 y 11 z "hola")) (evaluar-escalar 'y '(x 6 y 11 z "hola"))))
+    (is (= (list (generar-mensaje-error :unbound-variable 'n) '(x 6 y 11 z "hola")) (evaluar-escalar 'n '(x 6 y 11 z "hola"))))
   )
 )
