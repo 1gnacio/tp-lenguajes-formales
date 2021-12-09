@@ -698,11 +698,6 @@
   (and (= (type a) (type b)) (= (.toUpperCase (str a)) (.toUpperCase (str b))))
 )
 
-(defn aux-list [e]
-  (cond (list? e) 1
-  :else 0)
-)
-
 ; user=> (fnc-append '( (1 2) (3) (4 5) (6 7)))
 ; (1 2 3 4 5 6 7)
 ; user=> (fnc-append '( (1 2) 3 (4 5) (6 7)))
@@ -713,10 +708,9 @@
   "Devuelve el resultado de fusionar listas."
   [lista]
   (cond 
-    (= (reduce + (map aux-list lista)) (count lista))
-    (reduce concat lista)
+    (every? list? lista) (reduce concat lista)
   :else 
-    (generar-mensaje-error :wrong-type-arg (nth lista (.indexOf (map aux-list lista) 0)))
+    (generar-mensaje-error :wrong-type-arg (some #(when-not (list? %) %) lista))
   )
 )
 
