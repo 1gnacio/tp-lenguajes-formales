@@ -76,6 +76,10 @@
 (declare evaluar-clausulas-de-cond)
 (declare evaluar-secuencia-en-cond)
 
+(defn -main
+ "Ejemplo de Proyecto en Clojure"
+ [& args]
+ (repl))
 
 ; REPL (read–eval–print loop).
 ; Aridad 0: Muestra mensaje de bienvenida y se llama recursivamente con el ambiente inicial.
@@ -614,10 +618,10 @@
   Si el valor es un error, el ambiente no se modifica. De lo contrario, se le carga o reemplaza la nueva informacion."
   [lista clave valor]
   (cond 
-    (or (= (symbol ";ERROR:") valor) (and (list? valor)  (not (neg? (.indexOf valor (symbol ";ERROR:")))))) lista
+    (or (= (symbol ";ERROR:") valor) (and (list? valor) (error? valor))) lista
     (empty? lista) (concat lista (list clave valor))
     (neg? (.indexOf lista clave)) (concat lista (list clave valor))
-  :else (concat (take (+ 1 (.indexOf lista clave)) lista) (list valor) (drop valor lista))
+  :else (concat (take (+ 1 (.indexOf lista clave)) lista) (list valor) (nthnext lista (+ 2 (.indexOf lista clave))))
   )
 )
 
@@ -928,7 +932,7 @@
   (cond 
     (or (number? escalar) (string? escalar)) (list escalar ambiente)
     (neg? (.indexOf ambiente escalar)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
-    :else (list (first (drop (+ 1 (.indexOf ambiente escalar)) ambiente)) ambiente)
+    :else (list (nth ambiente (+ 1 (.indexOf ambiente escalar))) ambiente)
   )
 )
 
@@ -950,15 +954,12 @@
 ; ((;ERROR: define: bad variable (define 2 x)) (x 1))
 (defn evaluar-define
   "Evalua una expresion `define`. Devuelve una lista con el resultado y un ambiente actualizado con la definicion."
-  [exp arg]
-  (cond 
-    (and (= 3 (count exp)) (or (and (list? (second exp)) (empty? (second exp))) (number? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) arg)
-    (or (and (<= 3 (count exp)) (list? (second exp))) (and (= 3 (count exp)) (symbol? (second exp))))
-      (if (list? (second exp)) 
-        (list (symbol "#<unspecified>") (concat arg (list (first (second exp))) (list (concat (list 'lambda (list (second (second exp)))) (nthnext exp 2)))))
-        (list (symbol "#<unspecified>") (list (second exp) (nth exp 2)))
-      )
-    :else (list (generar-mensaje-error :missing-or-extra 'define exp) arg)
+  [exp amb]
+  (cond
+    (or (> 3 (count exp)) (and (< 3 (count exp)) (symbol? (second exp)))) (list (generar-mensaje-error :missing-or-extra 'define exp) amb)
+    (or (number? (second exp)) (and (list? (second exp)) (empty? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) amb)
+    (and (= 3 (count exp)) (symbol? (second exp))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
+    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (list (second (second exp))) (nth exp 2))))    
   )
 )
 
@@ -1036,9 +1037,9 @@
     (number? (second exp)) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
     (and (list? amb) (or (empty? amb) (neg? (.indexOf amb (second exp))))) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
-    (= 3 (count exp)) (list (symbol "#<unspecified>") (concat (take (+ 1 (.indexOf amb (second exp))) amb) (list (nth exp 2)) (drop (* 2 (+ 1 (.indexOf amb (second exp)))) amb)))
+    (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
   )
 )
 
-
+true
 ; Al terminar de cargar el archivo en el REPL de Clojure, se debe devolver true.
