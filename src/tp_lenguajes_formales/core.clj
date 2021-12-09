@@ -124,10 +124,15 @@
         (not (seq? expre))             (evaluar-escalar expre amb)
 
         (igual? (first expre) 'define) (evaluar-define expre amb)
-        (igual? (first expre) 'if) (evaluar-if expre amb)
-        (igual? (first expre) 'or) (evaluar-or expre amb)
-        (igual? (first expre) 'set!) (evaluar-set! expre amb)
-
+        (igual? (first expre) 'if)     (evaluar-if expre amb)
+        (igual? (first expre) 'or)     (evaluar-or expre amb)
+        (igual? (first expre) 'set!)   (evaluar-set! expre amb)
+        (igual? (first expre) 'cond)   (evaluar-cond expre amb)
+        (igual? (first expre) 'eval)   (evaluar-eval expre amb)
+        (igual? (first expre) 'exit)   (evaluar-exit expre amb)
+        (igual? (first expre) 'lambda) (evaluar-lambda expre amb)
+        (igual? (first expre) 'load)   (evaluar-load expre amb)
+        (igual? (first expre) 'quote)  (evaluar-quote expre amb)
          ;
          ;
          ;
@@ -202,9 +207,21 @@
 
     (igual? fnc 'append)  (fnc-append lae)
     (igual? fnc 'equal?)  (fnc-equal? lae)
-    (igual? fnc 'read)  (fnc-read lae)
-    (igual? fnc 'sumar)  (fnc-sumar lae)
+    (igual? fnc 'read)    (fnc-read lae)
+    (igual? fnc 'sumar)   (fnc-sumar lae)
     (igual? fnc 'restar)  (fnc-restar lae)
+    (igual? fnc 'car)     (fnc-car lae)
+    (igual? fnc 'cdr)     (fnc-cdr lae)
+    (igual? fnc 'cons)    (fnc-cons lae)
+    (igual? fnc 'display) (fnc-display lae)
+    (igual? fnc 'env)     (fnc-env lae)
+    (igual? fnc 'length)  (fnc-length lae)
+    (igual? fnc 'list)    (fnc-list lae)
+    (igual? fnc 'list?)   (fnc-list? lae)
+    (igual? fnc 'newline) (fnc-newline lae)
+    (igual? fnc 'not)     (fnc-not lae)
+    (igual? fnc 'null?)   (fnc-null? lae)
+    (igual? fnc 'reverse) (fnc-reverse lae)
     ;
     ;
     ; Si la funcion primitiva esta identificada mediante una palabra reservada, debe ignorarse la distincion entre mayusculas y minusculas 
