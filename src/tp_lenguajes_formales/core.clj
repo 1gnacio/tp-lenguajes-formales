@@ -644,7 +644,7 @@
   "Devuelve true o false, segun sea o no el arg. una lista con `;ERROR:` o `;WARNING:` como primer elemento."
   [lista]
   (cond 
-    (or (not (neg? (.indexOf lista (symbol ";ERROR:")))) (not (neg? (.indexOf lista (symbol ";WARNING:"))))) true
+    (or (= (first lista) (symbol ";ERROR:")) (= (first lista) (symbol ";WARNING:"))) true
   :else false
   )
 )
