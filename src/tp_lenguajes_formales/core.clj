@@ -124,6 +124,9 @@
         (not (seq? expre))             (evaluar-escalar expre amb)
 
         (igual? (first expre) 'define) (evaluar-define expre amb)
+        (igual? (first expre) 'if) (evaluar-if expre amb)
+        (igual? (first expre) 'or) (evaluar-or expre amb)
+        (igual? (first expre) 'set!) (evaluar-set! expre amb)
 
          ;
          ;
@@ -187,8 +190,9 @@
   "Aplica una funcion primitiva a una `lae` (lista de argumentos evaluados)."
   [fnc lae amb]
   (cond
-    (= fnc '<)            (fnc-menor lae)
-
+    (= fnc '<)         (fnc-menor lae)
+    (= fnc '>)         (fnc-mayor lae)
+    (= fnc '>=)        (fnc-mayor-o-igual lae)
     ;
     ;
     ; Si la funcion primitiva esta identificada por un simbolo, puede determinarse mas rapido que hacer con ella
@@ -197,7 +201,10 @@
 
 
     (igual? fnc 'append)  (fnc-append lae)
-
+    (igual? fnc 'equal?)  (fnc-equal? lae)
+    (igual? fnc 'read)  (fnc-read lae)
+    (igual? fnc 'sumar)  (fnc-sumar lae)
+    (igual? fnc 'restar)  (fnc-restar lae)
     ;
     ;
     ; Si la funcion primitiva esta identificada mediante una palabra reservada, debe ignorarse la distincion entre mayusculas y minusculas 
@@ -944,6 +951,14 @@
   )
 )
 
+(defn aux-eval [exp amb]
+  (cond
+    (and (list? exp) (= (symbol "set!") (first exp))) (evaluar-set! exp amb)
+    (and (symbol? exp) (not (neg? (.indexOf amb exp)))) (list (nth amb (+ 1 (.indexOf amb exp))) amb)
+    :else (list exp amb)
+  )
+)
+
 ; user=> (evaluar-if '(if 1 2) '(n 7))
 ; (2 (n 7))
 ; user=> (evaluar-if '(if 1 n) '(n 7))
@@ -962,14 +977,12 @@
 ; ((;ERROR: if: missing or extra expression (if 1)) (n 7))
 (defn evaluar-if
   "Evalua una expresion `if`. Devuelve una lista con el resultado y un ambiente eventualmente modificado."
-  [exp arg]
-  (cond
-    (> 3 (count exp)) (list (generar-mensaje-error :missing-or-extra 'if exp) arg)
-    (and (= 3 (count exp)) (= (symbol "#f") (second exp))) (list (symbol "#<unspecified>") arg)
-    (and (= 4 (count exp)) (= (symbol "#f") (second exp))) (list (nth exp 3) arg)
-    (and (or (= 3 (count exp)) (= 4 (count exp))) (= (symbol "#t") (second exp)))
-     (if (number? (nth exp 2)) (list (nth exp 2) arg) (nth arg (+ 1 (.indexOf arg (nth exp 2)))))
-    (number? (second exp)) (if (number? (nth exp 2)) (list (nth exp 2) arg) (list (nth arg (+ 1 (.indexOf arg (nth exp 2)))) arg))
+  [exp amb]
+  (cond 
+    (or (> 3 (count exp)) (< 4 (count exp))) (list (generar-mensaje-error :missing-or-extra 'if exp) amb)
+    (or (number? (second exp)) (= (symbol "#t") (second exp))) (aux-eval (nth exp 2) amb)
+    (and (= 3 (count exp)) (= (symbol "#f") (second exp))) (list (symbol "#<unspecified>") amb)
+    (and (= 4 (count exp)) (= (symbol "#f") (second exp))) (aux-eval (nth exp 3) amb)
   )
 )
 
@@ -1009,10 +1022,10 @@
   "Evalua una expresion `set!`. Devuelve una lista con el resultado y un ambiente actualizado con la redefinicion."
   [exp amb]
   (cond
-    (empty? amb) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (number? (second exp)) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
+    (and (list? amb) (or (empty? amb) (neg? (.indexOf amb (second exp))))) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
-    (= 3 (count exp)) (list (symbol "#<unspecified>") (nthnext exp 1))
+    (= 3 (count exp)) (list (symbol "#<unspecified>") (concat (take (+ 1 (.indexOf amb (second exp))) amb) (list (nth exp 2)) (drop (* 2 (+ 1 (.indexOf amb (second exp)))) amb)))
   )
 )
 
