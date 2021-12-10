@@ -201,6 +201,9 @@
   (cond
     (= fnc '<)         (fnc-menor lae)
     (= fnc '>)         (fnc-mayor lae)
+    (= fnc '+)         (fnc-sumar lae)
+    (= fnc '-)         (fnc-restar lae)
+    (= fnc '<=)        (not (fnc-mayor lae))
     (= fnc '>=)        (fnc-mayor-o-igual lae)
     ;
     ;
@@ -634,7 +637,7 @@
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
   [clave lista]
   (cond (neg? (.indexOf lista clave)) (generar-mensaje-error :unbound-variable clave) ;revisar el error generado
-  :else (/ (+ 2 (.indexOf lista clave)) 2)
+  :else (nth lista (+ 1 (.indexOf lista clave)))
   )
 )
 
@@ -646,9 +649,9 @@
 ; true
 (defn error?
   "Devuelve true o false, segun sea o no el arg. una lista con `;ERROR:` o `;WARNING:` como primer elemento."
-  [lista]
+  [arg]
   (cond 
-    (or (= (first lista) (symbol ";ERROR:")) (= (first lista) (symbol ";WARNING:"))) true
+    (and (list? arg) (or (= (first arg) (symbol ";ERROR:")) (= (first arg) (symbol ";WARNING:")))) true
   :else false
   )
 )
@@ -932,7 +935,7 @@
   (cond 
     (or (number? escalar) (string? escalar)) (list escalar ambiente)
     (neg? (.indexOf ambiente escalar)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
-    :else (list (nth ambiente (+ 1 (.indexOf ambiente escalar))) ambiente)
+    :else (list (buscar escalar ambiente) ambiente)
   )
 )
 
@@ -959,7 +962,7 @@
     (or (> 3 (count exp)) (and (< 3 (count exp)) (symbol? (second exp)))) (list (generar-mensaje-error :missing-or-extra 'define exp) amb)
     (or (number? (second exp)) (and (list? (second exp)) (empty? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) amb)
     (and (= 3 (count exp)) (symbol? (second exp))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
-    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (list (second (second exp))) (nth exp 2))))    
+    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (nthnext (second exp) 1) (nth exp 2))))    
   )
 )
 
@@ -1037,6 +1040,7 @@
     (number? (second exp)) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
     (and (list? amb) (or (empty? amb) (neg? (.indexOf amb (second exp))))) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
+    (and (= 3 (count exp)) (list? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (eval (nth exp 2))))
     (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
   )
 )
