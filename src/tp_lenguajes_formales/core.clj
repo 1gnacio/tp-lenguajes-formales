@@ -590,6 +590,14 @@
   :else 0)
 )
 
+(defn nombremayusculas [e]
+  (.toUpperCase (str e))
+)
+
+(defn mayusculas [e]
+  (.toUpperCase e)
+)
+
 ; user=> (verificar-parentesis "(hola 'mundo")
 ; 1
 ; user=> (verificar-parentesis "(hola '(mundo)))")
@@ -622,9 +630,30 @@
   [lista clave valor]
   (cond 
     (or (= (symbol ";ERROR:") valor) (and (seq? valor) (error? valor))) lista
-    (empty? lista) (concat lista (list clave valor))
-    (neg? (.indexOf lista clave)) (concat lista (list clave valor))
-  :else (concat (take (+ 1 (.indexOf lista clave)) lista) (list valor) (nthnext lista (+ 2 (.indexOf lista clave))))
+    (empty? lista) (list clave valor)
+    (seq? clave) (generar-mensaje-error :bad-variable 'actualizar-amb clave)
+    (neg? 
+      (.indexOf 
+        (map nombremayusculas (take-nth 2 lista)) 
+        (nombremayusculas clave)))
+    (concat lista (list clave valor))
+  :else (concat 
+          (take 
+            (+ 1 
+              (* 2 
+                (.indexOf 
+                  (map nombremayusculas (take-nth 2 lista)) 
+                  (nombremayusculas clave)))) 
+            lista) 
+          (list valor) 
+          (nthnext 
+            lista 
+              (+ 2 
+                (* 2 
+                  (.indexOf 
+                    (map nombremayusculas (take-nth 2 lista)) 
+                    (nombremayusculas clave)))))
+        )
   )
 )
 
@@ -636,8 +665,19 @@
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
   [clave lista]
-  (cond (neg? (.indexOf lista clave)) (generar-mensaje-error :unbound-variable clave)
-  :else (nth lista (+ 1 (.indexOf lista clave)))
+  (cond 
+    (seq? clave) (generar-mensaje-error :bad-variable 'buscar clave)
+    (neg? 
+      (.indexOf 
+        (map nombremayusculas (take-nth 2 lista)) 
+        (nombremayusculas clave)))
+    (generar-mensaje-error :unbound-variable clave)
+  :else 
+    (nth 
+      (take-nth 2 (rest lista)) 
+      (.indexOf 
+        (map nombremayusculas (take-nth 2 lista)) 
+        (nombremayusculas clave)))
   )
 )
 
@@ -707,7 +747,7 @@
   "Verifica la igualdad entre dos elementos al estilo de Scheme (case-insensitive)"
   [a b]
   (cond 
-    (every? symbol? (list a b)) (= (.toUpperCase (name a)) (.toUpperCase (name b)))
+    (every? symbol? (list a b)) (= (.toUpperCase (str a)) (.toUpperCase (str b)))
     (every? number? (list a b)) (= a b)
     (every? string? (list a b)) (= (.toUpperCase a) (.toUpperCase b))
     (and (every? seq? (list a b)) (every? empty? (list a b))) true
@@ -732,16 +772,7 @@
   )
 )
 
-(defn nombremayusculas [e]
-  (.toUpperCase (name e))
-)
-
-(defn mayusculas [e]
-  (.toUpperCase e)
-)
-
 (defn equal?-multi [lista]
-  (println lista)
   (cond
     (and (every? symbol? lista) (apply = (map nombremayusculas lista))) true
     (and (every? string? lista) (apply = (map mayusculas lista))) true
@@ -770,9 +801,9 @@
 (defn fnc-equal?
   "Compara elementos. Si son iguales, devuelve #t. Si no, #f."
   [lista]
-  (println lista)
   (cond 
     (empty? lista) (symbol "#t")
+    (and (= 1 (count lista)) (seq? (first lista))) (fnc-equal? (first lista))
     (and (every? symbol? lista) (apply = (map nombremayusculas lista))) (symbol "#t")
     (and (every? string? lista) (apply = (map mayusculas lista))) (symbol "#t")
     (and (every? number? lista) (apply = lista)) (symbol "#t")
@@ -968,9 +999,9 @@
   [escalar ambiente]
   (cond 
     (or (number? escalar) (string? escalar)) (list escalar ambiente)
-    (igual? "#f" (name escalar)) (list (symbol "#f") ambiente)
-    (igual? "#t" (name escalar)) (list (symbol "#t") ambiente)
-    (neg? (.indexOf ambiente escalar)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
+    (igual? (symbol "#T") escalar) (list (buscar (symbol "#t") ambiente) ambiente)
+    (igual? (symbol "#F") escalar) (list (buscar (symbol "#f") ambiente) ambiente)
+    (error? (buscar escalar ambiente)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
     :else (list (buscar escalar ambiente) ambiente)
   )
 )
@@ -998,15 +1029,16 @@
     (or (> 3 (count exp)) (and (< 3 (count exp)) (symbol? (second exp)))) (list (generar-mensaje-error :missing-or-extra 'define exp) amb)
     (or (number? (second exp)) (and (list? (second exp)) (empty? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) amb)
     (and (= 3 (count exp)) (symbol? (second exp))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
-    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (nthnext (second exp) 1) (if (= 1 (count (nthnext exp 2))) (first (nthnext exp 2)) (nthnext exp 2)))))    
-  )
-)
-
-(defn aux-eval [exp amb]
-  (cond
-    (and (seq? exp) (= (symbol "set!") (first exp))) (evaluar-set! exp amb)
-    (and (symbol? exp) (not (neg? (.indexOf amb exp)))) (list (nth amb (+ 1 (.indexOf amb exp))) amb)
-    :else (list exp amb)
+    :else 
+      (list 
+        (symbol "#<unspecified>") 
+        (actualizar-amb 
+          amb 
+          (first (second exp)) 
+          (list 'lambda (nthnext (second exp) 1) 
+            (if (= 1 (count (nthnext exp 2))) 
+            (first (nthnext exp 2)) 
+            (nthnext exp 2)))))    
   )
 )
 
@@ -1031,9 +1063,9 @@
   [exp amb]
   (cond 
     (or (> 3 (count exp)) (< 4 (count exp))) (list (generar-mensaje-error :missing-or-extra 'if exp) amb)
-    (or (number? (second exp)) (= (symbol "#t") (second exp))) (aux-eval (nth exp 2) amb)
-    (and (= 3 (count exp)) (= (symbol "#f") (second exp))) (list (symbol "#<unspecified>") amb)
-    (and (= 4 (count exp)) (= (symbol "#f") (second exp))) (aux-eval (nth exp 3) amb)
+    (not (igual? (symbol "#f") (first (evaluar (second exp) amb)))) (evaluar (nth exp 2) amb)
+    (and (= 3 (count exp)) (igual? (symbol "#f") (first (evaluar (second exp) amb)))) (list (symbol "#<unspecified>") amb)
+    (and (= 4 (count exp)) (igual? (symbol "#f") (first (evaluar (second exp) amb)))) (evaluar (nth exp 3) amb)
   )
 )
 
@@ -1074,9 +1106,10 @@
   [exp amb]
   (cond
     (number? (second exp)) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
-    (and (seq? amb) (or (empty? amb) (neg? (.indexOf amb (second exp))))) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
+    (error? (buscar (second exp) amb)) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
-    (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (eval (nth exp 2))))
+    (and (= 3 (count exp)) (seq? (nth exp 2)) (error? (evaluar (nth exp 2) amb))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
+    (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (evaluar (nth exp 2) amb)))    
     (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
   )
 )
