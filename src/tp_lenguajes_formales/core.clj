@@ -221,7 +221,7 @@
     (igual? fnc 'cdr)     (fnc-cdr lae)
     (igual? fnc 'cons)    (fnc-cons lae)
     (igual? fnc 'display) (fnc-display lae)
-    (igual? fnc 'env)     (fnc-env lae)
+    (igual? fnc 'env)     (fnc-env '() amb)
     (igual? fnc 'length)  (fnc-length lae)
     (igual? fnc 'list)    (fnc-list lae)
     (igual? fnc 'list?)   (fnc-list? lae)
@@ -621,7 +621,7 @@
   Si el valor es un error, el ambiente no se modifica. De lo contrario, se le carga o reemplaza la nueva informacion."
   [lista clave valor]
   (cond 
-    (or (= (symbol ";ERROR:") valor) (and (list? valor) (error? valor))) lista
+    (or (= (symbol ";ERROR:") valor) (and (seq? valor) (error? valor))) lista
     (empty? lista) (concat lista (list clave valor))
     (neg? (.indexOf lista clave)) (concat lista (list clave valor))
   :else (concat (take (+ 1 (.indexOf lista clave)) lista) (list valor) (nthnext lista (+ 2 (.indexOf lista clave))))
@@ -636,7 +636,7 @@
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
   [clave lista]
-  (cond (neg? (.indexOf lista clave)) (generar-mensaje-error :unbound-variable clave) ;revisar el error generado
+  (cond (neg? (.indexOf lista clave)) (generar-mensaje-error :unbound-variable clave)
   :else (nth lista (+ 1 (.indexOf lista clave)))
   )
 )
@@ -651,7 +651,7 @@
   "Devuelve true o false, segun sea o no el arg. una lista con `;ERROR:` o `;WARNING:` como primer elemento."
   [arg]
   (cond 
-    (and (list? arg) (or (= (first arg) (symbol ";ERROR:")) (= (first arg) (symbol ";WARNING:")))) true
+    (and (seq? arg) (or (= (first arg) (symbol ";ERROR:")) (= (first arg) (symbol ";WARNING:")))) true
   :else false
   )
 )
@@ -670,7 +670,7 @@
 
 (defn replace-proteger-bool [e]
   (cond
-    (list? e) (map replace-proteger-bool e)
+    (seq? e) (map replace-proteger-bool e)
     (= '%T e) (symbol "#T")
     (= '%t e) (symbol "#t")
     (= '%f e) (symbol "#f")
@@ -685,8 +685,12 @@
 ; (and (or #F #f #t #T) #T)
 (defn restaurar-bool
   "Cambia, en un codigo leido con read-string, %t por #t y %f por #f (y sus respectivas versiones en mayusculas)."
-  [lista]
-  (map replace-proteger-bool lista)
+  [expre]
+  (cond 
+    (seq? expre) (map replace-proteger-bool expre)
+    :else (replace-proteger-bool expre)
+  )
+  
 )
 
 ; user=> (igual? 'if 'IF)
@@ -699,10 +703,18 @@
 ; false
 ; user=> (igual? 6 "6")
 ; false
-(defn igual?
+(defn igual? ;pensar que hacer si son dos listas con strings
   "Verifica la igualdad entre dos elementos al estilo de Scheme (case-insensitive)"
   [a b]
-  (and (= (type a) (type b)) (= (.toUpperCase (str a)) (.toUpperCase (str b))))
+  (cond 
+    (every? symbol? (list a b)) (= (.toUpperCase (name a)) (.toUpperCase (name b)))
+    (every? number? (list a b)) (= a b)
+    (every? string? (list a b)) (= (.toUpperCase a) (.toUpperCase b))
+    (and (every? seq? (list a b)) (apply = (map count (list a b))) (every? number? (concat a b))) (apply = (map igual? a b))
+    (and (every? seq? (list a b)) (apply = (map count (list a b))) (every? symbol? (concat a b))) (apply = (map igual? a b))
+    (and (every? seq? (list a b)) (apply = (map count (list a b))) (every? string? (concat a b))) (apply = (map igual? a b))
+    :else false
+  )
 )
 
 ; user=> (fnc-append '( (1 2) (3) (4 5) (6 7)))
@@ -715,10 +727,18 @@
   "Devuelve el resultado de fusionar listas."
   [lista]
   (cond 
-    (every? list? lista) (reduce concat lista)
+    (every? seq? lista) (reduce concat lista)
   :else 
     (generar-mensaje-error :wrong-type-arg (some #(when-not (list? %) %) lista))
   )
+)
+
+(defn nombremayusculas [e]
+  (.toUpperCase (name e))
+)
+
+(defn mayusculas [e]
+  (.toUpperCase e)
 )
 
 ; user=> (fnc-equal? ())
@@ -739,13 +759,17 @@
 ; #f
 (defn fnc-equal?
   "Compara elementos. Si son iguales, devuelve #t. Si no, #f."
-  [lista]
+  ([lista]
   (cond 
-    (empty? lista) (symbol "#t")
-    (= (count lista) 1) (symbol "#t")
-    (apply = (seq (.toUpperCase (apply str lista)))) (symbol "#t")
+    (and (every? symbol? lista) (apply = (map nombremayusculas lista))) (symbol "#t")
+    (and (every? string? lista) (apply = (map mayusculas lista))) (symbol "#t")
+    (and (every? number? lista) (apply = lista)) (symbol "#t")
+    (and (every? seq? lista) (apply = (map count lista)) (every? number? lista) (apply = (apply fnc-equal? lista))) (symbol "#t")
+    (and (every? seq? lista) (apply = (map count lista)) (every? symbol? lista) (every? true? (apply fnc-equal? lista))) (symbol "#t")
+    (and (every? seq? lista) (apply = (map count lista)) (every? string? lista) (every? true? (apply fnc-equal? lista))) (symbol "#t")
     :else (symbol "#f")
-  )
+  ))
+  ([&args] (map igual? args))
 )
 
 ; user=> (fnc-read ())
@@ -934,6 +958,8 @@
   [escalar ambiente]
   (cond 
     (or (number? escalar) (string? escalar)) (list escalar ambiente)
+    (igual? "#f" (name escalar)) (list (symbol "#f") ambiente)
+    (igual? "#t" (name escalar)) (list (symbol "#t") ambiente)
     (neg? (.indexOf ambiente escalar)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
     :else (list (buscar escalar ambiente) ambiente)
   )
@@ -962,13 +988,13 @@
     (or (> 3 (count exp)) (and (< 3 (count exp)) (symbol? (second exp)))) (list (generar-mensaje-error :missing-or-extra 'define exp) amb)
     (or (number? (second exp)) (and (list? (second exp)) (empty? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) amb)
     (and (= 3 (count exp)) (symbol? (second exp))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
-    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (nthnext (second exp) 1) (nth exp 2))))    
+    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (nthnext (second exp) 1) (nthnext exp 2))))    
   )
 )
 
 (defn aux-eval [exp amb]
   (cond
-    (and (list? exp) (= (symbol "set!") (first exp))) (evaluar-set! exp amb)
+    (and (seq? exp) (= (symbol "set!") (first exp))) (evaluar-set! exp amb)
     (and (symbol? exp) (not (neg? (.indexOf amb exp)))) (list (nth amb (+ 1 (.indexOf amb exp))) amb)
     :else (list exp amb)
   )
@@ -1038,9 +1064,9 @@
   [exp amb]
   (cond
     (number? (second exp)) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
-    (and (list? amb) (or (empty? amb) (neg? (.indexOf amb (second exp))))) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
+    (and (seq? amb) (or (empty? amb) (neg? (.indexOf amb (second exp))))) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
-    (and (= 3 (count exp)) (list? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (eval (nth exp 2))))
+    (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (eval (nth exp 2))))
     (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
   )
 )
