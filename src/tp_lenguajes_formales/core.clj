@@ -639,10 +639,11 @@
     (concat lista (list clave valor))
   :else (concat 
           (take
+            (+ 1
               (* 2 
                 (.indexOf 
                   (map nombremayusculas (take-nth 2 lista)) 
-                  (nombremayusculas clave))) 
+                  (nombremayusculas clave))))
             lista) 
           (list valor) 
           (nthnext 
@@ -1035,9 +1036,9 @@
           amb 
           (first (second exp)) 
           (list 'lambda (nthnext (second exp) 1) 
-            (if (= 1 (count (nthnext exp 2))) 
-            (first (nthnext exp 2)) 
-            (nthnext exp 2)))))    
+            (if (= 1 (count (first (nthnext exp 2)))) 
+            (first (first (nthnext exp 2))) 
+            (first (nthnext exp 2))))))    
   )
 )
 
@@ -1081,13 +1082,12 @@
 (defn evaluar-or
   "Evalua una expresion `or`.  Devuelve una lista con el resultado y un ambiente."
   [exp amb]
+  (let [ev (if(< 1 (count exp)) (map first (map evaluar (drop 1 exp) (repeat amb))) '())]
   (cond
     (= 1 (count exp)) (list (symbol "#f") amb)
-    (= (symbol "#t") (second exp)) (list (symbol "#t") amb)
-    (and (= 3 (count exp)) (= (symbol "#f") (second exp))) (list (nth exp 2) amb)
-    (= (symbol "#f") (second exp)) (list (symbol "#f") amb)
-    (number? (second exp)) (list (second exp) amb)
-  )
+    (and (every? symbol? ev) (neg? (.indexOf ev (symbol "#t")))) (list (symbol "#f") amb)
+    :else (list (some #(when-not (igual? % (symbol "#f")) %) ev) amb)
+  ))
 )
 
 ; user=> (evaluar-set! '(set! x 1) '(x 0))
@@ -1103,14 +1103,15 @@
 (defn evaluar-set!
   "Evalua una expresion `set!`. Devuelve una lista con el resultado y un ambiente actualizado con la redefinicion."
   [exp amb]
+  (let [ev (if (< 2 (count exp)) (evaluar (nth exp 2) amb) '())]
   (cond
-    (number? (second exp)) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
+    (and (= 3 (count exp)) (not (symbol? (second exp)))) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
     (error? (buscar (second exp) amb)) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
-    (and (= 3 (count exp)) (seq? (nth exp 2)) (error? (evaluar (nth exp 2) amb))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
-    (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (evaluar (nth exp 2) amb)))    
+    (and (= 3 (count exp)) (seq? (nth exp 2)) (error? ev)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
+    (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb (second ev) (second exp) (first ev)))    
     (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
-  )
+  ))
 )
 
 true
