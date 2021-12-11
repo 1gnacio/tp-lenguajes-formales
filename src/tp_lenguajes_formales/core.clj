@@ -703,16 +703,15 @@
 ; false
 ; user=> (igual? 6 "6")
 ; false
-(defn igual? ;pensar que hacer si son dos listas con strings
+(defn igual?
   "Verifica la igualdad entre dos elementos al estilo de Scheme (case-insensitive)"
   [a b]
   (cond 
     (every? symbol? (list a b)) (= (.toUpperCase (name a)) (.toUpperCase (name b)))
     (every? number? (list a b)) (= a b)
     (every? string? (list a b)) (= (.toUpperCase a) (.toUpperCase b))
-    (and (every? seq? (list a b)) (apply = (map count (list a b))) (every? number? (concat a b))) (apply = (map igual? a b))
-    (and (every? seq? (list a b)) (apply = (map count (list a b))) (every? symbol? (concat a b))) (apply = (map igual? a b))
-    (and (every? seq? (list a b)) (apply = (map count (list a b))) (every? string? (concat a b))) (apply = (map igual? a b))
+    (and (every? seq? (list a b)) (every? empty? (list a b))) true
+    (and (every? seq? (list a b)) (apply = (map count (list a b)))) (every? true? (map igual? a b))
     :else false
   )
 )
@@ -741,6 +740,17 @@
   (.toUpperCase e)
 )
 
+(defn equal?-multi [lista]
+  (println lista)
+  (cond
+    (and (every? symbol? lista) (apply = (map nombremayusculas lista))) true
+    (and (every? string? lista) (apply = (map mayusculas lista))) true
+    (and (every? number? lista) (apply = lista)) true
+    (and (every? seq? lista) (every? true? (map equal?-multi (apply map list lista)))) true
+    :else false
+  )
+)
+
 ; user=> (fnc-equal? ())
 ; #t
 ; user=> (fnc-equal? '(A))
@@ -759,17 +769,17 @@
 ; #f
 (defn fnc-equal?
   "Compara elementos. Si son iguales, devuelve #t. Si no, #f."
-  ([lista]
+  [lista]
+  (println lista)
   (cond 
+    (empty? lista) (symbol "#t")
     (and (every? symbol? lista) (apply = (map nombremayusculas lista))) (symbol "#t")
     (and (every? string? lista) (apply = (map mayusculas lista))) (symbol "#t")
     (and (every? number? lista) (apply = lista)) (symbol "#t")
-    (and (every? seq? lista) (apply = (map count lista)) (every? number? lista) (apply = (apply fnc-equal? lista))) (symbol "#t")
-    (and (every? seq? lista) (apply = (map count lista)) (every? symbol? lista) (every? true? (apply fnc-equal? lista))) (symbol "#t")
-    (and (every? seq? lista) (apply = (map count lista)) (every? string? lista) (every? true? (apply fnc-equal? lista))) (symbol "#t")
+    (and (every? seq? lista) (every? empty? lista)) (symbol "#t")
+    (and (every? seq? lista) (apply = (map count lista)) (every? true? (map equal?-multi (apply map list lista)))) (symbol "#t")
     :else (symbol "#f")
-  ))
-  ([&args] (map igual? args))
+  )
 )
 
 ; user=> (fnc-read ())
@@ -988,7 +998,7 @@
     (or (> 3 (count exp)) (and (< 3 (count exp)) (symbol? (second exp)))) (list (generar-mensaje-error :missing-or-extra 'define exp) amb)
     (or (number? (second exp)) (and (list? (second exp)) (empty? (second exp)))) (list (generar-mensaje-error :bad-variable 'define exp) amb)
     (and (= 3 (count exp)) (symbol? (second exp))) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
-    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (nthnext (second exp) 1) (nthnext exp 2))))    
+    :else (list (symbol "#<unspecified>") (actualizar-amb amb (first (second exp)) (list 'lambda (nthnext (second exp) 1) (if (= 1 (count (nthnext exp 2))) (first (nthnext exp 2)) (nthnext exp 2)))))    
   )
 )
 
