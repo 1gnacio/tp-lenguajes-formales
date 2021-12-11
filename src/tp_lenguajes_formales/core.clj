@@ -638,12 +638,11 @@
         (nombremayusculas clave)))
     (concat lista (list clave valor))
   :else (concat 
-          (take 
-            (+ 1 
+          (take
               (* 2 
                 (.indexOf 
                   (map nombremayusculas (take-nth 2 lista)) 
-                  (nombremayusculas clave)))) 
+                  (nombremayusculas clave))) 
             lista) 
           (list valor) 
           (nthnext 
