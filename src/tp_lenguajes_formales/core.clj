@@ -122,6 +122,7 @@
 (defn evaluar
   "Evalua una expresion `expre` en un ambiente. Devuelve un lista con un valor resultante y un ambiente."
   [expre amb]
+  (println expre)
   (if (and (seq? expre) (or (empty? expre) (error? expre))) ; si `expre` es () o error, devolverla intacta
       (list expre amb)                                      ; de lo contrario, evaluarla
       (cond
@@ -1036,9 +1037,9 @@
           amb 
           (first (second exp)) 
           (list 'lambda (nthnext (second exp) 1) 
-            (if (= 1 (count (first (nthnext exp 2)))) 
-            (first (first (nthnext exp 2))) 
-            (first (nthnext exp 2))))))    
+            (if (= 1 (count (nthnext exp 2))) 
+            (first (nthnext exp 2)) 
+            (nthnext exp 2)))))    
   )
 )
 
