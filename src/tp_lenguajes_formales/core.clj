@@ -122,7 +122,6 @@
 (defn evaluar
   "Evalua una expresion `expre` en un ambiente. Devuelve un lista con un valor resultante y un ambiente."
   [expre amb]
-  (println "evaluar" expre)
   (if (and (seq? expre) (or (empty? expre) (error? expre))) ; si `expre` es () o error, devolverla intacta
       (list expre amb)                                      ; de lo contrario, evaluarla
       (cond
@@ -825,7 +824,7 @@
 ; (;ERROR: Wrong number of args given #<primitive-procedure read>)
 (defn fnc-read
   "Devuelve la lectura de un elemento de Scheme desde la terminal/consola."
-  [lista] 
+  [lista]
     (cond
       (empty? lista) (read-string (leer-entrada))
       (= 1 (count lista)) (generar-mensaje-error :io-ports-not-implemented 'read)
@@ -1104,13 +1103,13 @@
 (defn evaluar-set!
   "Evalua una expresion `set!`. Devuelve una lista con el resultado y un ambiente actualizado con la redefinicion."
   [exp amb]
-  (let [ev (if (< 2 (count exp)) (evaluar (nth exp 2) amb))]
+  (let [ev (if (and (< 2 (count exp)) (seq? (nth exp 2)) (symbol? (first (nth exp 2)))) (evaluar (nth exp 2) amb) (nth exp 2))]
   (cond
     (and (= 3 (count exp)) (not (symbol? (second exp)))) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
     (error? (buscar (second exp) amb)) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
     (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
     (and (= 3 (count exp)) (seq? (nth exp 2)) (error? ev)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
-    (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb (second ev) (second exp) (first ev)))    
+    (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb (second ev) (second exp) (list 'quote (first ev))))    
     (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
   ))
 )
