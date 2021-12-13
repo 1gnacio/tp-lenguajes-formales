@@ -6,5 +6,4 @@
   :dependencies [[org.clojure/clojure "1.10.3"]]
   :main ^:skip-aot tp-lenguajes-formales.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all
-                       :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}})
+  :profiles {:uberjar {:aot [tp-lenguajes-formales.core]}})
