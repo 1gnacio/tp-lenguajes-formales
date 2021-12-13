@@ -122,7 +122,7 @@
 (defn evaluar
   "Evalua una expresion `expre` en un ambiente. Devuelve un lista con un valor resultante y un ambiente."
   [expre amb]
-  (println expre)
+  (println "evaluar" expre)
   (if (and (seq? expre) (or (empty? expre) (error? expre))) ; si `expre` es () o error, devolverla intacta
       (list expre amb)                                      ; de lo contrario, evaluarla
       (cond
@@ -216,8 +216,6 @@
     (igual? fnc 'append)  (fnc-append lae)
     (igual? fnc 'equal?)  (fnc-equal? lae)
     (igual? fnc 'read)    (fnc-read lae)
-    (igual? fnc 'sumar)   (fnc-sumar lae)
-    (igual? fnc 'restar)  (fnc-restar lae)
     (igual? fnc 'car)     (fnc-car lae)
     (igual? fnc 'cdr)     (fnc-cdr lae)
     (igual? fnc 'cons)    (fnc-cons lae)
@@ -629,15 +627,16 @@
   "Devuelve un ambiente actualizado con una clave (nombre de la variable o funcion) y su valor. 
   Si el valor es un error, el ambiente no se modifica. De lo contrario, se le carga o reemplaza la nueva informacion."
   [lista clave valor]
+  (let [ev (if (or (not (seq? valor)) (error? (evaluar-quote valor lista))) valor (first (evaluar-quote valor lista)))]
   (cond 
-    (or (= (symbol ";ERROR:") valor) (and (seq? valor) (error? valor))) lista
-    (empty? lista) (list clave valor)
+    (or (= (symbol ";ERROR:") ev) (and (seq? ev) (error? ev))) lista
+    (empty? lista) (list clave ev)
     (seq? clave) (generar-mensaje-error :bad-variable 'actualizar-amb clave)
     (neg? 
       (.indexOf 
         (map nombremayusculas (take-nth 2 lista)) 
         (nombremayusculas clave)))
-    (concat lista (list clave valor))
+    (concat lista (list clave ev))
   :else (concat 
           (take
             (+ 1
@@ -646,7 +645,7 @@
                   (map nombremayusculas (take-nth 2 lista)) 
                   (nombremayusculas clave))))
             lista) 
-          (list valor) 
+          (list ev) 
           (nthnext 
             lista 
               (+ 2 
@@ -655,7 +654,7 @@
                     (map nombremayusculas (take-nth 2 lista)) 
                     (nombremayusculas clave)))))
         )
-  )
+  ))
 )
 
 ; user=> (buscar 'c '(a 1 b 2 c 3 d 4 e 5))
@@ -692,8 +691,19 @@
   "Devuelve true o false, segun sea o no el arg. una lista con `;ERROR:` o `;WARNING:` como primer elemento."
   [arg]
   (cond 
-    (and (seq? arg) (or (= (first arg) (symbol ";ERROR:")) (= (first arg) (symbol ";WARNING:")))) true
+    (and (seq? arg) (or (.contains (str (first arg)) (str (symbol ";ERROR:"))) (.contains (str (first arg)) (str (symbol ";WARNING:"))))) true
   :else false
+  )
+)
+
+(defn replace-restaurar-bool [e]
+  (cond
+    (seq? e) (map replace-restaurar-bool e)
+    (= '%T e) (symbol "#T")
+    (= '%t e) (symbol "#t")
+    (= '%f e) (symbol "#f")
+    (= '%F e) (symbol "#F")
+    :else e
   )
 )
 
@@ -706,18 +716,7 @@
 (defn proteger-bool-en-str
   "Cambia, en una cadena, #t por %t y #f por %f (y sus respectivas versiones en mayusculas), para poder aplicarle read-string."
   [cadena]
-  (apply str (replace {\# \%} cadena))
-)
-
-(defn replace-proteger-bool [e]
-  (cond
-    (seq? e) (map replace-proteger-bool e)
-    (= '%T e) (symbol "#T")
-    (= '%t e) (symbol "#t")
-    (= '%f e) (symbol "#f")
-    (= '%F e) (symbol "#F")
-    :else e
-  )
+  (.replace (.replace (.replace (.replace cadena "#t" "%t") "#T" "%T") "#f" "%f") "#F" "%F")
 )
 
 ; user=> (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))
@@ -728,8 +727,8 @@
   "Cambia, en un codigo leido con read-string, %t por #t y %f por #f (y sus respectivas versiones en mayusculas)."
   [expre]
   (cond 
-    (seq? expre) (map replace-proteger-bool expre)
-    :else (replace-proteger-bool expre)
+    (seq? expre) (map replace-restaurar-bool expre)
+    :else (replace-restaurar-bool expre)
   )
   
 )
@@ -769,7 +768,7 @@
   (cond 
     (every? seq? lista) (reduce concat lista)
   :else 
-    (generar-mensaje-error :wrong-type-arg (some #(when-not (list? %) %) lista))
+    (generar-mensaje-error :wrong-type-arg (some #(when-not (seq? %) %) lista))
   )
 )
 
@@ -1000,6 +999,7 @@
   [escalar ambiente]
   (cond 
     (or (number? escalar) (string? escalar)) (list escalar ambiente)
+    (igual? (symbol "#<unspecified>") escalar) (list escalar ambiente)
     (igual? (symbol "#T") escalar) (list (buscar (symbol "#t") ambiente) ambiente)
     (igual? (symbol "#F") escalar) (list (buscar (symbol "#f") ambiente) ambiente)
     (error? (buscar escalar ambiente)) (list (generar-mensaje-error :unbound-variable escalar) ambiente)
@@ -1083,7 +1083,7 @@
 (defn evaluar-or
   "Evalua una expresion `or`.  Devuelve una lista con el resultado y un ambiente."
   [exp amb]
-  (let [ev (if(< 1 (count exp)) (map first (map evaluar (drop 1 exp) (repeat amb))) '())]
+  (let [ev (if(< 1 (count exp)) (map first (map evaluar (drop 1 exp) (repeat amb))))]
   (cond
     (= 1 (count exp)) (list (symbol "#f") amb)
     (and (every? symbol? ev) (neg? (.indexOf ev (symbol "#t")))) (list (symbol "#f") amb)
@@ -1104,7 +1104,7 @@
 (defn evaluar-set!
   "Evalua una expresion `set!`. Devuelve una lista con el resultado y un ambiente actualizado con la redefinicion."
   [exp amb]
-  (let [ev (if (< 2 (count exp)) (evaluar (nth exp 2) amb) '())]
+  (let [ev (if (< 2 (count exp)) (evaluar (nth exp 2) amb))]
   (cond
     (and (= 3 (count exp)) (not (symbol? (second exp)))) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
     (error? (buscar (second exp) amb)) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
@@ -1115,5 +1115,4 @@
   ))
 )
 
-true
 ; Al terminar de cargar el archivo en el REPL de Clojure, se debe devolver true.
