@@ -79,7 +79,7 @@
 (defn -main
  "Ejemplo de Proyecto en Clojure"
  [& args]
- (repl))
+ (println (repl)))
 
 ; REPL (read–eval–print loop).
 ; Aridad 0: Muestra mensaje de bienvenida y se llama recursivamente con el ambiente inicial.
@@ -1101,11 +1101,11 @@
 (defn evaluar-set!
   "Evalua una expresion `set!`. Devuelve una lista con el resultado y un ambiente actualizado con la redefinicion."
   [exp amb]
-  (let [ev (if (and (< 2 (count exp)) (seq? (nth exp 2)) (symbol? (first (nth exp 2)))) (evaluar (nth exp 2) amb) (nth exp 2))]
+  (let [ev (if (and (< 2 (count exp)) (seq? (nth exp 2)) (symbol? (first (nth exp 2)))) (evaluar (nth exp 2) amb))]
   (cond
+    (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
     (and (= 3 (count exp)) (not (symbol? (second exp)))) (list (generar-mensaje-error :bad-variable 'set! (second exp)) amb)
     (error? (buscar (second exp) amb)) (list (generar-mensaje-error :unbound-variable (second exp)) amb)
-    (not (= 3 (count exp))) (list (generar-mensaje-error :missing-or-extra 'set! exp) amb)
     (and (= 3 (count exp)) (seq? (nth exp 2)) (error? ev)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
     (and (= 3 (count exp)) (seq? (nth exp 2))) (list (symbol "#<unspecified>") (actualizar-amb (second ev) (second exp) (list 'quote (first ev))))    
     (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
