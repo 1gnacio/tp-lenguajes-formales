@@ -1035,10 +1035,8 @@
         (actualizar-amb 
           amb 
           (first (second exp)) 
-          (list 'lambda (nthnext (second exp) 1) 
-            (if (= 1 (count (nthnext exp 2))) 
-            (first (nthnext exp 2)) 
-            (nthnext exp 2)))))    
+          (concat (list 'lambda) (list (nthnext (second exp) 1)) (nthnext exp 2))
+        ))    
   )
 )
 
@@ -1113,5 +1111,7 @@
     (= 3 (count exp)) (list (symbol "#<unspecified>") (actualizar-amb amb (second exp) (nth exp 2)))
   ))
 )
+
+true
 
 ; Al terminar de cargar el archivo en el REPL de Clojure, se debe devolver true.
